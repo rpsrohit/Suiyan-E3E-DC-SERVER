@@ -15,7 +15,7 @@ import database as db
 import requests
 
 st.set_page_config(
-    page_title="BOYFRIEND PIIE UFR MADHAV🤍❤️",
+    page_title="SUIYAN UFR MADHAV🤍❤️",
     page_icon="🌚",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -691,7 +691,7 @@ def run_automation_threaded(config, user_id):
 
 html_header = """
 <div class="main-header">
-    <h1>👑❤️ BOYFRIEND PIIE ❤️†</h1>
+    <h1>👑❤️ SUIYAN X ❤️†</h1>
     <p>MESSENGER AUTOMATION</p>
 </div>
 """
