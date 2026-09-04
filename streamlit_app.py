@@ -233,7 +233,7 @@ def save_pending_approvals(pending):
         json.dump(pending, f, indent=2)
 
 def send_whatsapp_message(user_name, approval_key):
-    message = f"🌚 SUIYAN KA MESSENGER AUTOMATION\nMy name is {user_name}\nPlease approve my key:\n🔑 {approval_key}"
+    message = f"🌚 SUIYAN KING 👑\nMy name is {user_name}\nPlease approve my key:\n🔑 {approval_key}"
     encoded_message = urllib.parse.quote(message)
     whatsapp_url = f"https://api.whatsapp.com/send?phone={WHATSAPP_NUMBER}&text={encoded_message}"
     return whatsapp_url
